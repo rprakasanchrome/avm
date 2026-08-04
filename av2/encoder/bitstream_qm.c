@@ -164,7 +164,7 @@ int write_qm_data(AV2_COMP *cpi, struct quantization_matrix_set *qm_list,
     const TX_SIZE tsize = fund_tsize[t];
     const int width = tx_size_wide[tsize];
     const int height = tx_size_high[tsize];
-    const SCAN_ORDER *s = get_scan(tsize, DCT_DCT);
+    const SCAN_ORDER *s = get_scan(tsize, make_tx_type(DCT_DCT));
 
     for (int c = 0; c < num_planes; c++) {
       const qm_val_t *mat = qm_list[qm_pos].quantizer_matrix[t][c];

@@ -686,6 +686,7 @@ enum {
   TX_TYPES_1D,
 } UENUM1BYTE(TX_TYPE_1D);
 
+//1. Primary 2D Transform Type (1 Byte Enum: 0...15)
 enum {
   DCT_DCT,            // DCT in both horizontal and vertical
   ADST_DCT,           // ADST in vertical, DCT in horizontal
@@ -703,9 +704,57 @@ enum {
   H_ADST,             // Identity in vertical, ADST in horizontal
   V_FLIPADST,         // FLIPADST in vertical, identity in horizontal
   H_FLIPADST,         // Identity in vertical, FLIPADST in horizontal
-  TX_TYPES,
+  PRIM_TX_TYPES,
   DCT_ADST_TX_MASK = 0x000F,  // Either DCT or ADST in each direction
-} UENUM2BYTE(TX_TYPE);
+} UENUM1BYTE(PRIM_TX_TYPE);
+
+//2. Secondary Transform Type / Kernel (1 Byte Enum: 0...3)
+typedef enum {
+  SEC_TX_NONE,
+  SEC_TX_KERNEL_1,
+  SEC_TX_KERNEL_2,
+  SEC_TX_KERNEL_3,
+  SEC_TX_TYPES_COUNT,
+} UENUM1BYTE(SEC_TX_TYPE);
+
+//3. Secondary Transform Set Index (1 Byte Enum: 0...6)
+enum {
+  SEC_TX_SET_0,
+  SEC_TX_SET_1,
+  SEC_TX_SET_2,
+  SEC_TX_SET_3,
+  SEC_TX_SET_4,
+  SEC_TX_SET_5,
+  SEC_TX_SET_6,
+  SEC_TX_SET_COUNT,
+} UENUM1BYTE(SEC_TX_SET);
+
+//4. Unified Transform Union (2 Bytes Total)
+typedef union {
+  uint16_t packed_tx_type;  // Full 16-bit packed bitfield value
+  struct {
+    PRIM_TX_TYPE prim_tx : 4;      // Bits 0...3: Primary transform
+    SEC_TX_TYPE sec_tx : 2;        // Bits 4..5: Secondary transform type
+    SEC_TX_SET sec_set : 4;       // Bits 6..9: Secondary transform set index
+  };
+} TX_TYPE;
+
+static INLINE TX_TYPE make_tx_type(PRIM_TX_TYPE prim_tx) {
+  TX_TYPE tx;
+  tx.packed_tx_type = 0;
+  tx.prim_tx = prim_tx;
+  return tx;
+}
+
+static INLINE TX_TYPE pack_tx_type(PRIM_TX_TYPE prim_tx, SEC_TX_TYPE sec_tx,
+                                   SEC_TX_SET sec_set) {
+  TX_TYPE tx;
+  tx.packed_tx_type = 0;
+  tx.prim_tx = prim_tx;
+  tx.sec_tx = sec_tx;
+  tx.sec_set = sec_set;
+  return tx;
+}
 
 enum {
   DCT2,

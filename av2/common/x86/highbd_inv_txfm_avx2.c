@@ -20,7 +20,7 @@
 
 void av2_highbd_inv_txfm_add_avx2(const tran_low_t *input, uint16_t *dest,
                                   int stride, const TxfmParam *txfm_param) {
-  assert(av2_ext_tx_used[txfm_param->tx_set_type][txfm_param->tx_type]);
+  assert(av2_ext_tx_used[txfm_param->tx_set_type][txfm_param->prim_tx_type]);
   inv_txfm(input, dest, stride, txfm_param);
 }
 
@@ -2853,7 +2853,7 @@ void inv_transform_1d_avx2(const int *src, int *dst, int shift, int line,
 void inv_txfm_avx2(const tran_low_t *input, uint16_t *dest, int stride,
                    const TxfmParam *txfm_param) {
   const TX_SIZE tx_size = txfm_param->tx_size;
-  TX_TYPE tx_type = txfm_param->tx_type;
+  PRIM_TX_TYPE tx_type = txfm_param->prim_tx_type;
 
   int width = AVMMIN(MAX_TX_SIZE >> 1, tx_size_wide[tx_size]);
   int height = AVMMIN(MAX_TX_SIZE >> 1, tx_size_high[tx_size]);

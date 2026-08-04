@@ -99,7 +99,7 @@ class QuantizeTest : public ::testing::TestWithParam<QuantizeParam> {
     const int log_scale = LogScale_;
 
     // Testing uses 2-D DCT scan order table
-    const SCAN_ORDER *const sc = get_default_scan(tx_size_, DCT_DCT);
+    const SCAN_ORDER *const sc = get_default_scan(tx_size_, make_tx_type(DCT_DCT));
 
     // Testing uses luminance quantization table
     const int32_t *zbin = qtab_->quant.y_zbin[q];
@@ -267,7 +267,7 @@ TEST_P(QuantizeTest, DISABLED_Speed) {
   uint16_t *eob = (uint16_t *)(dqcoeff + n_coeffs);
 
   // Testing uses 2-D DCT scan order table
-  const SCAN_ORDER *const sc = get_default_scan(tx_size_, DCT_DCT);
+  const SCAN_ORDER *const sc = get_default_scan(tx_size_, make_tx_type(DCT_DCT));
 
   // Testing uses luminance quantization table
   const int q = 22;

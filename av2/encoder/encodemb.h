@@ -151,7 +151,7 @@ void av2_subtract_block(const MACROBLOCKD *xd, int rows, int cols,
                         const uint16_t *src, ptrdiff_t src_stride,
                         const uint16_t *pred, ptrdiff_t pred_stride, int plane,
                         int blk_col, int blk_row, int frame_width,
-                        int frame_height, TX_TYPE tx_type);
+                        int frame_height, PRIM_TX_TYPE prim_tx_type);
 
 void av2_subtract_block_dpcm(const MACROBLOCKD *xd, int rows, int cols,
                              int16_t *diff, ptrdiff_t diff_stride,
@@ -159,7 +159,7 @@ void av2_subtract_block_dpcm(const MACROBLOCKD *xd, int rows, int cols,
                              const uint16_t *pred, ptrdiff_t pred_stride,
                              int plane, int blk_col, int blk_row,
                              int frame_width, int frame_height,
-                             TX_TYPE tx_type);
+                             PRIM_TX_TYPE prim_tx_type);
 
 void av2_subtract_block_vert(const MACROBLOCKD *xd, int rows, int cols,
                              int16_t *diff, ptrdiff_t diff_stride,
@@ -173,7 +173,8 @@ void av2_subtract_block_horz(const MACROBLOCKD *xd, int rows, int cols,
 
 void av2_subtract_txb(MACROBLOCK *x, int plane, BLOCK_SIZE plane_bsize,
                       int blk_col, int blk_row, TX_SIZE tx_size,
-                      int frame_width, int frame_height, TX_TYPE tx_type);
+                      int frame_width, int frame_height,
+                      PRIM_TX_TYPE prim_tx_type);
 
 void av2_subtract_plane(MACROBLOCK *x, BLOCK_SIZE plane_bsize, int plane,
                         int frame_width, int frame_height);
