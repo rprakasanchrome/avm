@@ -627,8 +627,8 @@ static AVM_INLINE void av2_write_coeffs_txb_facade(
   if (code_rest) {
     if (((cm->seq_params.enable_fsc &&
           mbmi->fsc_mode[xd->tree_type == CHROMA_PART] &&
-          get_primary_tx_type(tx_type) == IDTX && plane == PLANE_TYPE_Y) ||
-         use_inter_fsc(cm, plane, get_primary_tx_type(tx_type), is_inter))) {
+          tx_type.prim_tx == IDTX && plane == PLANE_TYPE_Y) ||
+         use_inter_fsc(cm, plane, tx_type.prim_tx, is_inter))) {
       av2_write_coeffs_txb_skip(cm, x, w, blk_row, blk_col, plane, block,
                                 tx_size);
     } else {
@@ -1038,7 +1038,7 @@ void av2_write_tx_type(const AV2_COMMON *const cm, const MACROBLOCKD *xd,
   const int is_inter = is_inter_block(mbmi, xd->tree_type);
   if (xd->lossless[mbmi->segment_id]) {
     if (is_inter && tx_size == TX_4X4) {
-      int lossless_inter_tx_type = get_primary_tx_type(tx_type) == IDTX;
+      int lossless_inter_tx_type = tx_type.prim_tx == IDTX;
       avm_write_symbol(w, lossless_inter_tx_type,
                        xd->tile_ctx->lossless_inter_tx_type_cdf, 2);
     }
@@ -1063,15 +1063,14 @@ void av2_write_tx_type(const AV2_COMMON *const cm, const MACROBLOCKD *xd,
     assert(eset > 0);
     const int size_info = av2_size_class[tx_size];
     if (!is_inter) {
-      assert(av2_ext_tx_used[tx_set_type][get_primary_tx_type(tx_type)]);
+      assert(av2_ext_tx_used[tx_set_type][tx_type.prim_tx]);
     }
 
     if (is_inter) {
       const int eob_tx_ctx = get_lp2tx_ctx(tx_size, get_txb_bwl(tx_size), eob);
       if (tx_set_type != EXT_TX_SET_LONG_SIDE_64 &&
           tx_set_type != EXT_TX_SET_LONG_SIDE_32) {
-        int tx_type_idx =
-            av2_ext_tx_ind[tx_set_type][get_primary_tx_type(tx_type)];
+        int tx_type_idx = av2_ext_tx_ind[tx_set_type][tx_type.prim_tx];
         if (eset == 1 || eset == 2) {
           int tx_set = tx_type_idx < INTER_TX_TYPE_INDEX_COUNT ? 0 : 1;
           avm_write_symbol(
@@ -1098,14 +1097,13 @@ void av2_write_tx_type(const AV2_COMMON *const cm, const MACROBLOCKD *xd,
               av2_num_ext_tx_set[tx_set_type]);
         }
       } else {
-        bool is_long_side_dct =
-            is_dct_type(tx_size, get_primary_tx_type(tx_type));
+        bool is_long_side_dct = is_dct_type(tx_size, tx_type.prim_tx);
         if (tx_size_sqr_up == TX_32X32) {
           avm_write_symbol(w, is_long_side_dct, ec_ctx->tx_ext_32_cdf[is_inter],
                            2);
         }
         int tx_type_idx = get_idx_from_txtype_for_large_txfm(
-            tx_set_type, get_primary_tx_type(tx_type),
+            tx_set_type, tx_type.prim_tx,
             is_long_side_dct);  // 0: DCT_DCT, 1: ADST, 2: FLIPADST,
                                 // 3: Identity
 
@@ -1115,15 +1113,15 @@ void av2_write_tx_type(const AV2_COMMON *const cm, const MACROBLOCKD *xd,
       }
     } else {
       if (cm->features.reduced_tx_set_used == 2) {
-        assert(get_primary_tx_type(tx_type) == DCT_DCT);
+        assert(tx_type.prim_tx == DCT_DCT);
         return;
       }
       if (tx_set_type != EXT_TX_SET_LONG_SIDE_64 &&
           tx_set_type != EXT_TX_SET_LONG_SIDE_32) {
         avm_write_symbol(
             w,
-            av2_tx_type_to_idx(get_primary_tx_type(tx_type), tx_set_type,
-                               intra_dir, size_info),
+            av2_tx_type_to_idx(tx_type.prim_tx, tx_set_type, intra_dir,
+                               size_info),
             ec_ctx->intra_ext_tx_cdf[eset +
                                      (features->reduced_tx_set_used ? 1 : 0)]
                                     [square_tx_size],
@@ -1131,15 +1129,14 @@ void av2_write_tx_type(const AV2_COMMON *const cm, const MACROBLOCKD *xd,
                 ? av2_num_reduced_tx_set[features->reduced_tx_set_used - 1]
                 : av2_num_ext_tx_set_intra[tx_set_type]);
       } else {
-        int is_long_side_dct =
-            is_dct_type(tx_size, get_primary_tx_type(tx_type));
+        int is_long_side_dct = is_dct_type(tx_size, tx_type.prim_tx);
         if (tx_size_sqr_up == TX_32X32) {
           avm_write_symbol(w, is_long_side_dct, ec_ctx->tx_ext_32_cdf[is_inter],
                            2);
         }
 
         int tx_type_idx = get_idx_from_txtype_for_large_txfm(
-            tx_set_type, get_primary_tx_type(tx_type),
+            tx_set_type, tx_type.prim_tx,
             is_long_side_dct);  // 0: DCT_DCT, 1: ADST, 2: FLIPADST,
                                 // 3: Identity
         avm_write_symbol(w, tx_type_idx,
@@ -1166,10 +1163,10 @@ void av2_write_cctx_type(const AV2_COMMON *const cm, const MACROBLOCKD *xd,
 static void write_sec_tx_set(FRAME_CONTEXT *ec_ctx, avm_writer *w,
                              MB_MODE_INFO *mbmi, TX_SIZE tx_size,
                              TX_TYPE tx_type) {
-  SEC_TX_SET stx_set_flag = get_secondary_tx_set(tx_type);
-  if (get_primary_tx_type(tx_type) == ADST_ADST) stx_set_flag -= IST_SET_SIZE;
+  SEC_TX_SET stx_set_flag = tx_type.sec_set;
+  if (tx_type.prim_tx == ADST_ADST) stx_set_flag -= IST_SET_SIZE;
   uint8_t intra_mode = get_intra_mode(mbmi, PLANE_TYPE_Y);
-  if (get_primary_tx_type(tx_type) == ADST_ADST && tx_size_wide[tx_size] >= 8 &&
+  if (tx_type.prim_tx == ADST_ADST && tx_size_wide[tx_size] >= 8 &&
       tx_size_high[tx_size] >= 8) {
     uint8_t stx_set_in_bitstream =
         most_probable_stx_mapping_ADST_ADST[intra_mode][stx_set_flag];
@@ -1202,9 +1199,9 @@ void av2_write_sec_tx_type(const AV2_COMMON *const cm, const MACROBLOCKD *xd,
       !segfeature_active(&cm->seg, mbmi->segment_id, SEG_LVL_SKIP)) {
     FRAME_CONTEXT *ec_ctx = xd->tile_ctx;
     const TX_SIZE square_tx_size = txsize_sqr_map[tx_size];
-    const SEC_TX_TYPE stx_flag = get_secondary_tx_type(tx_type);
+    const SEC_TX_TYPE stx_flag = tx_type.sec_tx;
     assert(stx_flag <= STX_TYPES - 1);
-    if (block_signals_sec_tx_type(xd, tx_size, get_primary_tx_type(tx_type), eob)) {
+    if (block_signals_sec_tx_type(xd, tx_size, tx_type.prim_tx, eob)) {
       avm_write_symbol(w, stx_flag, ec_ctx->stx_cdf[is_inter][square_tx_size],
                        STX_TYPES);
       if (stx_flag > 0 && !is_inter) {
@@ -1214,9 +1211,9 @@ void av2_write_sec_tx_type(const AV2_COMMON *const cm, const MACROBLOCKD *xd,
   } else {
     FRAME_CONTEXT *ec_ctx = xd->tile_ctx;
     const TX_SIZE square_tx_size = txsize_sqr_map[tx_size];
-    SEC_TX_TYPE stx_flag = get_secondary_tx_type(tx_type);
+    SEC_TX_TYPE stx_flag = tx_type.sec_tx;
     assert(stx_flag <= STX_TYPES - 1);
-    if (block_signals_sec_tx_type(xd, tx_size, get_primary_tx_type(tx_type), eob)) {
+    if (block_signals_sec_tx_type(xd, tx_size, tx_type.prim_tx, eob)) {
       avm_write_symbol(w, stx_flag, ec_ctx->stx_cdf[is_inter][square_tx_size],
                        STX_TYPES);
       if (stx_flag > 0 && !is_inter) {

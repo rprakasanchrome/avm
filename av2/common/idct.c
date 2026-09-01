@@ -879,7 +879,7 @@ static void init_txfm_param(const MACROBLOCKD *xd, int plane, TX_SIZE tx_size,
                             int use_ddt, TxfmParam *txfm_param) {
   (void)plane;
   MB_MODE_INFO *const mbmi = xd->mi[0];
-  txfm_param->prim_tx_type = get_primary_tx_type(tx_type);
+  txfm_param->prim_tx_type = tx_type.prim_tx;
   txfm_param->sec_tx_set = 0;
   txfm_param->sec_tx_type = 0;
   txfm_param->intra_mode = get_intra_mode(mbmi, plane);
@@ -892,8 +892,8 @@ static void init_txfm_param(const MACROBLOCKD *xd, int plane, TX_SIZE tx_size,
                             : txfm_param->intra_mode < PAETH_PRED);
   if (mode_dependent_condition && !xd->lossless[mbmi->segment_id]) {
     // updated EOB condition
-    txfm_param->sec_tx_type = get_secondary_tx_type(tx_type);
-    txfm_param->sec_tx_set = get_secondary_tx_set(tx_type);
+    txfm_param->sec_tx_type = tx_type.sec_tx;
+    txfm_param->sec_tx_set = tx_type.sec_set;
   }
   txfm_param->tx_size = tx_size;
   // EOB needs to adjusted after inverse IST
@@ -1011,7 +1011,7 @@ void av2_inverse_transform_block(const MACROBLOCKD *xd,
   assert(av2_ext_tx_used[txfm_param.tx_set_type][txfm_param.prim_tx_type]);
   assert(IMPLIES(
       txfm_param.sec_tx_type,
-      block_signals_sec_tx_type(xd, tx_size, get_primary_tx_type(tx_type), txfm_param.eob)));
+      block_signals_sec_tx_type(xd, tx_size, tx_type.prim_tx, txfm_param.eob)));
 
   // Work buffer for secondary transform
   DECLARE_ALIGNED(32, tran_low_t, temp_dqcoeff[MAX_TX_SQUARE]);
@@ -1112,8 +1112,8 @@ void av2_inv_stxfm(tran_low_t *coeff, TxfmParam *txfm_param) {
     fprintf(stderr,
             "[inv stx] inter %d ptx %d txs %dx%d tp %d stx_set %d stx_type %d\n"
             "(stx coeff)\n",
-            txfm_param->is_inter, txfm_param->prim_tx_type,
-            width, height, transpose, txfm_param->sec_tx_set, stx_type);
+            txfm_param->is_inter, txfm_param->prim_tx_type, width, height,
+            transpose, txfm_param->sec_tx_set, stx_type);
     for (int i = 0; i < height; i++) {
       for (int j = 0; j < width; j++) {
         fprintf(stderr, "%d,", coeff[i * width + j]);

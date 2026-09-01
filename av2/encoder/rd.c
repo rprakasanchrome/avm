@@ -348,7 +348,8 @@ void av2_fill_mode_rates(AV2_COMMON *const cm, ModeCosts *mode_costs,
     for (s = 1; s < EXT_TX_SETS_INTRA; ++s) {
       if (use_intra_ext_tx_for_txsize[s][i]) {
         av2_cost_tokens_from_cdf(mode_costs->intra_tx_type_costs[s][i],
-                                 fc->intra_ext_tx_cdf[s][i], PRIM_TX_TYPES, NULL);
+                                 fc->intra_ext_tx_cdf[s][i], PRIM_TX_TYPES,
+                                 NULL);
       }
     }
   }

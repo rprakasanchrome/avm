@@ -13,6 +13,7 @@
 #ifndef AVM_AV2_COMMON_ENUMS_H_
 #define AVM_AV2_COMMON_ENUMS_H_
 
+#include <assert.h>
 #include "config/avm_config.h"
 
 #include "avm/avm_codec.h"
@@ -686,6 +687,7 @@ enum {
   TX_TYPES_1D,
 } UENUM1BYTE(TX_TYPE_1D);
 
+// Primary 2D Transform Type
 enum {
   DCT_DCT,            // DCT in both horizontal and vertical
   ADST_DCT,           // ADST in vertical, DCT in horizontal
@@ -707,8 +709,6 @@ enum {
   DCT_ADST_TX_MASK = 0x000F,  // Either DCT or ADST in each direction
 } UENUM2BYTE(PRIM_TX_TYPE);
 
-typedef PRIM_TX_TYPE TX_TYPE;
-
 // Secondary Transform Type / Kernel
 enum {
   SEC_TX_NONE,
@@ -729,6 +729,32 @@ enum {
   SEC_TX_SET_6,
   SEC_TX_SET_COUNT,
 } UENUM2BYTE(SEC_TX_SET);
+
+// Unified Transform Union
+typedef union {
+  uint16_t packed_tx_type;
+  struct {
+    PRIM_TX_TYPE prim_tx : 4;
+    SEC_TX_TYPE sec_tx : 2;
+    SEC_TX_SET sec_set : 4;
+  };
+} TX_TYPE;
+
+static_assert(sizeof(TX_TYPE) == sizeof(uint16_t),
+              "TX_TYPE size must exactly be sizeof(uint16_t)");
+
+static INLINE TX_TYPE pack_tx_type(PRIM_TX_TYPE prim_tx, SEC_TX_TYPE sec_tx,
+                                   SEC_TX_SET sec_set) {
+  TX_TYPE tx;
+  tx.packed_tx_type = 0;
+  tx.prim_tx = prim_tx;
+  tx.sec_tx = sec_tx;
+  tx.sec_set = sec_set;
+  return tx;
+}
+
+#define MAKE_TX_TYPE_FROM_PRIM_TX_TYPE(prim_tx) \
+  pack_tx_type((prim_tx), SEC_TX_NONE, SEC_TX_SET_0)
 
 enum {
   DCT2,
