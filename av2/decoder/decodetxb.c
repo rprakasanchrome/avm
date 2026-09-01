@@ -563,7 +563,7 @@ uint8_t av2_read_coeffs_txb_skip(const AV2_COMMON *const cm,
     dequant_values[c] = get_dqv(dequant, c, iqmatrix);
   }
 #endif  // CONFIG_INSPECTION
-  const SCAN_ORDER *const scan_order = get_scan(tx_size, tx_type);
+  const SCAN_ORDER *const scan_order = get_scan(tx_size, get_primary_tx_type(tx_type));
   const int16_t *const scan = scan_order->scan;
   const TX_SIZE txs_ctx = get_txsize_entropy_ctx(tx_size);
   const int size_ctx = AVMMIN(txs_ctx, TX_16X16);
@@ -707,7 +707,7 @@ uint8_t av2_read_coeffs_txb(const AV2_COMMON *const cm, DecoderCodingBlock *dcb,
     dequant_values[c] = get_dqv(dequant, c, iqmatrix);
   }
 #endif  // CONFIG_INSPECTION
-  const SCAN_ORDER *const scan_order = get_scan(tx_size, tx_type);
+  const SCAN_ORDER *const scan_order = get_scan(tx_size, get_primary_tx_type(tx_type));
   const int16_t *const scan = scan_order->scan;
 
   // read  sec_tx_type here
@@ -1009,7 +1009,7 @@ void av2_read_coeffs_txb_facade(const AV2_COMMON *const cm,
     if (((cm->seq_params.enable_fsc &&
           mbmi->fsc_mode[xd->tree_type == CHROMA_PART] &&
           get_primary_tx_type(tx_type) == IDTX && plane == PLANE_TYPE_Y) ||
-         use_inter_fsc(cm, plane, tx_type, is_inter))) {
+         use_inter_fsc(cm, plane, get_primary_tx_type(tx_type), is_inter))) {
       cul_level =
           av2_read_coeffs_txb_skip(cm, dcb, r, row, col, plane, tx_size);
     } else {
